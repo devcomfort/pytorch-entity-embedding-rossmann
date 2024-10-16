@@ -69,7 +69,7 @@ class NeuralNet(nn.Module, BaseEstimator, RegressorMixin):
         self.verbose_epoch = verbose_epoch
         self.random_seed = random_seed
 
-        if not (self.random_seed is None):
+        if self.random_seed is not None:
             torch.manual_seed(self.random_seed)
 
     def activ_func(self, x):
