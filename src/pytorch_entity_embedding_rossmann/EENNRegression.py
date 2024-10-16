@@ -6,12 +6,12 @@ Created on Thu Aug  9 14:25:31 2018
 @author: lsanchez
 """
 
-from EENN import EntEmbNN
-import eval_utils
+from .EENN import EntEmbNN
+from .eval_utils import eval_regression
 
 
 class EntEmbNNRegression(EntEmbNN):
-    '''
+    """
     Parameters
     ----------
     cat_emb_dim : dict
@@ -36,17 +36,17 @@ class EntEmbNNRegression(EntEmbNN):
     alpha : float
 
     epochs : int
-    '''
+    """
 
     def __init__(
         self,
-        cat_emb_dim = {},
-        dense_layers = [1000, 500],
-        drop_out_layers = [0., 0.],
-        drop_out_emb = 0.,
-        act_func = 'relu',
-        loss_function='MSELoss',
-        train_size=1.,
+        cat_emb_dim={},
+        dense_layers=[1000, 500],
+        drop_out_layers=[0.0, 0.0],
+        drop_out_emb=0.0,
+        act_func="relu",
+        loss_function="MSELoss",
+        train_size=1.0,
         batch_size=128,
         epochs=10,
         lr=0.001,
@@ -55,8 +55,8 @@ class EntEmbNNRegression(EntEmbNN):
         allow_cuda=False,
         random_seed=None,
         output_sigmoid=False,
-        verbose=False):
-
+        verbose=False,
+    ):
         super(EntEmbNNRegression, self).__init__()
 
         # Model specific params.
@@ -95,33 +95,31 @@ class EntEmbNNRegression(EntEmbNN):
         self.layers = {}
 
     def predict(self, X):
-        """
-        """
+        """ """
 
         return self.predict_raw(X)
 
     def eval_model(self):
-        '''
+        """
         Model evaluation
-        '''
+        """
 
         self.eval()
 
         test_y_pred = self.predict(self.X_test)
 
-        report = eval_utils.eval_regression(
-            y_true=self.y_test,
-            y_pred=test_y_pred)
+        report = eval_regression(y_true=self.y_test, y_pred=test_y_pred)
 
         msg = "\t[%s] Test: MSE:%s MAE: %s gini: %s R2: %s MAPE: %s"
 
         msg_params = (
             self.epoch_cnt,
-            round(report['mean_squared_error'], 6),
-            round(report['mean_absolute_error'], 6),
-            round(report['gini_normalized'], 6),
-            round(report['r2_score'], 6),
-            round(report['mean_absolute_percentage_error'], 6))
+            round(report["mean_squared_error"], 6),
+            round(report["mean_absolute_error"], 6),
+            round(report["gini_normalized"], 6),
+            round(report["r2_score"], 6),
+            round(report["mean_absolute_percentage_error"], 6),
+        )
 
         self.epochs_reports.append(report)
 

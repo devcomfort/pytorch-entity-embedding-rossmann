@@ -9,6 +9,7 @@ Created on Fri Jun  1 17:51:34 2018
 import numpy as np
 import pandas as pd
 import pickle
+
 from sklearn.utils.validation import check_X_y
 from sklearn.model_selection import train_test_split
 from sklearn.base import BaseEstimator, RegressorMixin
@@ -22,7 +23,7 @@ from torch.autograd import Variable
 
 
 class NeuralNet(nn.Module, BaseEstimator, RegressorMixin):
-    '''
+    """
     Parameters
     ----------
     cat_emb_dim : dict
@@ -47,16 +48,17 @@ class NeuralNet(nn.Module, BaseEstimator, RegressorMixin):
     alpha : float
 
     epochs : int
-    '''
+    """
+
     def __init__(
         self,
-        act_func='relu',
-        train_size=.8,
+        act_func="relu",
+        train_size=0.8,
         batch_size=128,
         random_seed=None,
         verbose=True,
-        verbose_epoch=100):
-
+        verbose_epoch=100,
+    ):
         super(NeuralNet, self).__init__()
 
         # General
@@ -67,30 +69,28 @@ class NeuralNet(nn.Module, BaseEstimator, RegressorMixin):
         self.verbose_epoch = verbose_epoch
         self.random_seed = random_seed
 
-        if not(self.random_seed is None):
+        if not (self.random_seed is None):
             torch.manual_seed(self.random_seed)
 
     def activ_func(self, x):
-        '''
+        """
         Applies an activation function
-        '''
+        """
 
-        act_funcs = {
-            'relu': F.relu,
-            'selu': F.selu}
+        act_funcs = {"relu": F.relu, "selu": F.selu}
 
         return act_funcs[self.act_func](x)
 
     def make_dataloader(self, X, y=None, shuffle=False, num_workers=8):
-        '''
+        """
         Wraps a dataloader to iterate over (X, y)
-        '''
+        """
 
         kwargs = {}
         if self.allow_cuda:
-            kwargs = {'num_workers': 4, 'pin_memory': True}
+            kwargs = {"num_workers": 4, "pin_memory": True}
         else:
-            kwargs = {'num_workers': 4}
+            kwargs = {"num_workers": 4}
 
         if y is None:
             y = pd.Series([0] * X.shape[0])
@@ -102,27 +102,30 @@ class NeuralNet(nn.Module, BaseEstimator, RegressorMixin):
 
         loader = data_utils.DataLoader(
             data_utils.TensorDataset(
-                torch.from_numpy(X.values).float(),
-                torch.from_numpy(y.values).float()
+                torch.from_numpy(X.values).float(), torch.from_numpy(y.values).float()
             ),
             batch_size=self.batch_size,
             shuffle=shuffle,
-            **kwargs)
+            **kwargs,
+        )
 
         return loader
 
     def split_train_test(self):
-        '''
+        """
         Splits Train-Test partitions
-        '''
+        """
 
-        err_msg = 'X size %s does not match y size %s'
+        err_msg = "X size %s does not match y size %s"
         assert self.X.shape[0] == self.y.shape[0], err_msg % (
-            self.X.shape, self.y.shape)
+            self.X.shape,
+            self.y.shape,
+        )
 
         if (self.train_size < 1) and (self.train_size > 0):
             X_train, X_test, y_train, y_test = train_test_split(
-                self.X, self.y, train_size=self.train_size)
+                self.X, self.y, train_size=self.train_size
+            )
         else:
             X_train = self.X
             X_test = self.X
@@ -136,7 +139,7 @@ class NeuralNet(nn.Module, BaseEstimator, RegressorMixin):
 
 
 class EntEmbNN(NeuralNet):
-    '''
+    """
     Parameters
     ----------
     cat_emb_dim : dict
@@ -161,16 +164,17 @@ class EntEmbNN(NeuralNet):
     alpha : float
 
     epochs : int
-    '''
+    """
+
     def __init__(
         self,
-        cat_emb_dim = {},
-        dense_layers = [1000, 500],
-        drop_out_layers = [0., 0.],
-        drop_out_emb = 0.,
-        act_func = 'relu',
-        loss_function='MSELoss',
-        train_size=1.,
+        cat_emb_dim={},
+        dense_layers=[1000, 500],
+        drop_out_layers=[0.0, 0.0],
+        drop_out_emb=0.0,
+        act_func="relu",
+        loss_function="MSELoss",
+        train_size=1.0,
         batch_size=128,
         epochs=10,
         lr=0.001,
@@ -179,8 +183,8 @@ class EntEmbNN(NeuralNet):
         allow_cuda=False,
         random_seed=None,
         output_sigmoid=False,
-        verbose=True):
-
+        verbose=True,
+    ):
         super(EntEmbNN, self).__init__()
 
         # Model specific params.
@@ -220,27 +224,24 @@ class EntEmbNN(NeuralNet):
         self.layers = {}
 
     def get_loss(self, loss_name):
-        if loss_name == 'SmoothL1Loss':
+        if loss_name == "SmoothL1Loss":
             return torch.nn.SmoothL1Loss()
-        elif loss_name == 'L1Loss':
+        elif loss_name == "L1Loss":
             return torch.nn.L1Loss()
-        elif loss_name == 'MSELoss':
+        elif loss_name == "MSELoss":
             return torch.nn.MSELoss()
-        elif loss_name == 'BCELoss':
+        elif loss_name == "BCELoss":
             return torch.nn.BCELoss()
-        elif loss_name == 'BCEWithLogitsLoss':
+        elif loss_name == "BCEWithLogitsLoss":
             return torch.nn.BCEWithLogitsLoss()
         else:
-            print(
-                'Invalid Loss name: %s, using default: %s' % (
-                    loss_name, 'MSELoss')
-            )
+            print("Invalid Loss name: %s, using default: %s" % (loss_name, "MSELoss"))
             return torch.nn.MSELoss()
 
     def init_embeddings(self):
-        '''
+        """
         Initializes the embeddings
-        '''
+        """
 
         # Get embedding sizes from categ. features
         for f in self.cat_features:
@@ -248,48 +249,33 @@ class EntEmbNN(NeuralNet):
 
             emb_dim = self.cat_emb_dim[f]
 
-            self.embeddings[f] = nn.Embedding(
-                len(le.classes_),
-                emb_dim)
+            self.embeddings[f] = nn.Embedding(len(le.classes_), emb_dim)
 
             # Weight initialization as original paper
-            torch.nn.init.uniform_(
-                self.embeddings[f].weight.data,
-                a=-.05, b=.05)
+            torch.nn.init.uniform_(self.embeddings[f].weight.data, a=-0.05, b=0.05)
 
             # Add emb. layer to model
-            self.add_module(
-                '[Emb %s]' % f,
-                self.embeddings[f])
+            self.add_module("[Emb %s]" % f, self.embeddings[f])
 
     def init_dense_layers(self):
-        '''
+        """
         Initializes dense layers
-        '''
+        """
 
         input_size = (
             # Numb of Embedding neurons in input layer
-            sum([
-                self.embeddings[f].weight.data.shape[1]
-                for f in self.cat_features
-            ])
+            sum([self.embeddings[f].weight.data.shape[1] for f in self.cat_features])
         ) + (
             # Numb of regular neurons for numerical features
             len(self.num_features)
         )
 
-        NN_arquitecture = (
-            [input_size]
-        ) + (
-            self.dense_layers
-        ) + (
-            [1]
-        )
+        NN_arquitecture = ([input_size]) + (self.dense_layers) + ([1])
 
         for layer_idx, current_layer_size in enumerate(NN_arquitecture[:-1]):
             next_layer_size = NN_arquitecture[layer_idx + 1]
 
-            layer_name = 'l%s' % (layer_idx + 1)
+            layer_name = "l%s" % (layer_idx + 1)
             layer = nn.Linear(current_layer_size, next_layer_size)
 
             self.add_module(layer_name, layer)
@@ -297,19 +283,18 @@ class EntEmbNN(NeuralNet):
             self.layers[layer_name] = layer
 
     def X_fit(self, X):
-        """
-        """
+        """ """
         # Identify categorical vs numerical features
         self.cat_features = list(self.cat_emb_dim.keys())
-        self.num_features = list(set(
-            self.X.columns.tolist()
-        ).difference(self.cat_features))
+        self.num_features = list(
+            set(self.X.columns.tolist()).difference(self.cat_features)
+        )
 
         # Create encoders for categorical features
         self.labelencoders = {}
         for c in self.cat_features:
             le = LabelEncoder()
-            le.fit( X[c].astype(str).tolist())
+            le.fit(X[c].astype(str).tolist())
             self.labelencoders[c] = le
 
     def X_transform(self, X):
@@ -324,21 +309,19 @@ class EntEmbNN(NeuralNet):
 
             codes[missin_codes] = self.labelencoders[c].classes_[0]
 
-            X[c] = self.labelencoders[c].transform(
-                codes
-            )
+            X[c] = self.labelencoders[c].transform(codes)
 
         X = X[self.cat_features + self.num_features]
 
         return X
 
     def X_emd_replace(self, data):
-        '''
+        """
         Returns the formated X-input, which is composed by the categorical
         embeddings and the respective continuous inputs.
-        '''
+        """
 
-        ''' Replace embeddings '''
+        """ Replace embeddings """
         data_emb = []
         for f_idx, f in enumerate(self.cat_features):
             # Get column feature
@@ -350,26 +333,19 @@ class EntEmbNN(NeuralNet):
             # Retrieves the embeddings
             emb_cat = self.embeddings[f](f_data.long())
 
-            #Apply Dropout
-            emb_cat = F.dropout(
-                emb_cat,
-                p=self.drop_out_emb,
-                training=self.training)
+            # Apply Dropout
+            emb_cat = F.dropout(emb_cat, p=self.drop_out_emb, training=self.training)
 
             data_emb.append(emb_cat)
 
-        ''' Concat numeric features '''
+        """ Concat numeric features """
         if len(self.num_features) > 0:
-            data_emb.append(
-                data[:, len(self.cat_features):]
-            )
+            data_emb.append(data[:, len(self.cat_features) :])
 
         return torch.cat(data_emb, 1)
 
     def fit(self, X, y):
-        """
-
-        """
+        """ """
 
         self.X = X.copy()
         self.y = y.copy()
@@ -389,19 +365,17 @@ class EntEmbNN(NeuralNet):
         self.iterate_n_epochs(epochs=self.epochs)
 
     def iterate_n_epochs(self, epochs):
-        '''
+        """
         Makes N training iterations
         epochs = self.epochs
-        '''
+        """
 
         self.epoch_cnt = 0
         self.optimizer = torch.optim.Adam(
-            self.parameters(),
-            lr=self.lr,
-            weight_decay=self.alpha
+            self.parameters(), lr=self.lr, weight_decay=self.alpha
         )
 
-        while(self.epoch_cnt < epochs):
+        while self.epoch_cnt < epochs:
             self.train()
             loss_func = self.get_loss(self.loss_function)
 
@@ -423,9 +397,7 @@ class EntEmbNN(NeuralNet):
                 self.X_train.iloc[0]
                 output = self.forward(x)
 
-                loss = loss_func(
-                    output.reshape(1, -1)[0],
-                    target.float())
+                loss = loss_func(output.reshape(1, -1)[0], target.float())
 
                 loss.backward()
                 self.optimizer.step()
@@ -439,19 +411,17 @@ class EntEmbNN(NeuralNet):
                 #             )
                 #         )
 
-            self.train_epoch_loss.append(
-                sum(train_epoch_loss) / len(train_epoch_loss)
-            )
+            self.train_epoch_loss.append(sum(train_epoch_loss) / len(train_epoch_loss))
             self.train_loss += train_epoch_loss
 
             self.epoch_cnt += 1
             self.eval_model()
 
     def forward(self, x):
-        '''
+        """
         Forward pass
         x_ = x
-        '''
+        """
 
         # Parse batch with embeddings
         x = self.X_emd_replace(x)
@@ -459,23 +429,19 @@ class EntEmbNN(NeuralNet):
         # Forward pass on dense layers
         n_layers = len(self.layers.items())
         for layer_idx in range(n_layers):
-            layer_name = 'l%s' % (layer_idx + 1)
+            layer_name = "l%s" % (layer_idx + 1)
             layer = self.layers[layer_name]
 
-            is_inner_layer = (
-                layer_idx < len(self.dense_layers)
-            )
+            is_inner_layer = layer_idx < len(self.dense_layers)
 
             x = layer(x)
 
             # Do not apply act.func on last layer
             if is_inner_layer:
-
                 # Apply dropout
                 x = F.dropout(
-                    x,
-                    p=self.drop_out_layers[layer_idx],
-                    training=self.training)
+                    x, p=self.drop_out_layers[layer_idx], training=self.training
+                )
 
                 x = self.activ_func(x)
 
@@ -485,14 +451,14 @@ class EntEmbNN(NeuralNet):
         return x
 
     def predict_raw(self, X):
-        '''
+        """
         Predict scores
 
         self = NNmodel
         X  = self.X_test
-        '''
+        """
 
-        #Set pytorch model in eval. mode
+        # Set pytorch model in eval. mode
         self.eval()
 
         dataloader = self.make_dataloader(self.X_transform(X))
@@ -513,39 +479,40 @@ class EntEmbNN(NeuralNet):
 
         return y_pred
 
-#    def get_embeddings(self):
-#
-#        embeddings = {}
-#        for c in self.cat_features:
-#            categ_names = self.X[c].drop_duplicates()
-#            categ_codes = categ_names.cat.codes
-#            categories = pd.Series(
-#                [x for x in categ_names],
-#                index=categ_codes.values)
-#            categories.sort_index(inplace=True)
-#            categories.index = categories.index + 1
-#
-#            emb = self.embeddings[c].weight.data
-#            if self.allow_cuda:
-#                emb = emb.cpu()
-#
-#            emb = pd.DataFrame(
-#                emb.numpy(),
-#                index=categories.values)
-#            emb = emb.add_prefix('latent_')
-#            embeddings[c] = emb
-#
-#        return embeddings
+    #    def get_embeddings(self):
+    #
+    #        embeddings = {}
+    #        for c in self.cat_features:
+    #            categ_names = self.X[c].drop_duplicates()
+    #            categ_codes = categ_names.cat.codes
+    #            categories = pd.Series(
+    #                [x for x in categ_names],
+    #                index=categ_codes.values)
+    #            categories.sort_index(inplace=True)
+    #            categories.index = categories.index + 1
+    #
+    #            emb = self.embeddings[c].weight.data
+    #            if self.allow_cuda:
+    #                emb = emb.cpu()
+    #
+    #            emb = pd.DataFrame(
+    #                emb.numpy(),
+    #                index=categories.values)
+    #            emb = emb.add_prefix('latent_')
+    #            embeddings[c] = emb
+    #
+    #        return embeddings
     def dump_embeddings(self, emb_path):
         """
         Dump embeddings to hdf file.
         """
-        print('Saving in: %s' % emb_path)
+        print("Saving in: %s" % emb_path)
         for emb_name, emb_pytorch in self.embeddings.items():
             emb = pd.DataFrame(
                 emb_pytorch.weight.data.numpy(),
-                index=self.labelencoders[emb_name].classes_)
-            print('\t%s' % emb_name)
+                index=self.labelencoders[emb_name].classes_,
+            )
+            print("\t%s" % emb_name)
 
             emb.to_hdf(emb_path, key=emb_name)
 
@@ -556,16 +523,15 @@ class EntEmbNN(NeuralNet):
 
         data_emb = []
         for emb_name in self.cat_features:
-
             emb_pytorch = self.embeddings[emb_name]
 
             emb = pd.DataFrame(
                 emb_pytorch.weight.data.numpy(),
-                index=self.labelencoders[emb_name].classes_
-            ).add_prefix('%s_' % emb_name)
+                index=self.labelencoders[emb_name].classes_,
+            ).add_prefix("%s_" % emb_name)
 
             x = emb.loc[X_raw[emb_name]]
-            x = x.reset_index().drop('index', axis=1)
+            x = x.reset_index().drop("index", axis=1)
             x.index = X_raw.index
 
             data_emb.append(x)
@@ -581,7 +547,7 @@ class EntEmbNN(NeuralNet):
         Loads a saved model
         """
 
-        f = open(filename, 'rb')
+        f = open(filename, "rb")
         tmp_dict = pickle.load(f)
         f.close()
 
@@ -592,6 +558,6 @@ class EntEmbNN(NeuralNet):
         Saves as pickle object
         """
 
-        f = open(filename, 'wb')
+        f = open(filename, "wb")
         pickle.dump(self.__dict__, f, 2)
         f.close()
