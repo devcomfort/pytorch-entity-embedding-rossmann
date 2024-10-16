@@ -13,6 +13,7 @@ dependencies = [
     "requests>=2.32.3",
     "pytest>=8.3.3",
     "pandas-stubs>=2.2.3.241009",
+    "tables>=3.10.1",
 ]
 readme = "README.md"
 requires-python = ">= 3.8"
