@@ -11,20 +11,22 @@ import pandas as pd
 from sklearn.neural_network import MLPRegressor, MLPClassifier
 from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
-from sklearn import datasets
 
 from .eval_utils import MAPE, eval_regression, classification_report
 from .EENNRegression import EntEmbNNRegression
 from .EENNBinary import EntEmbNNBinary
+
+# 데이터셋 모듈 호출
+from sklearn.datasets import load_diabetes
+from .datasets import get_X_train_test_data
 
 
 def test_rossman():
     """
     Reproduces rossman results.
     """
-    import datasets
 
-    X, y, X_test, y_test = datasets.get_X_train_test_data()
+    X, y, X_test, y_test = get_X_train_test_data()
 
     for data in [X, X_test]:
         data.drop("Open", inplace=True, axis=1)
@@ -81,8 +83,8 @@ def test_regression_pure_neural_net_vs_sklearn():
     Compares results from sklearn and eenn Multilayer Perceptron
     """
 
-    # Load the diabetes dataset
-    diabetes = datasets.load_diabetes()
+    # Load the diabetes dataset (from scikit-learn)
+    diabetes = load_diabetes()
 
     # Split the data into training/testing sets
     X_train = pd.DataFrame(diabetes.data[:-20])
