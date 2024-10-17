@@ -19,89 +19,15 @@ import csv
 import random
 import pandas as pd
 import numpy as np
-import requests
-import subprocess
 
-DATAPATH = os.path.expanduser("~/data_rossmann")
-ROSSMANN_PATH = os.path.join(DATAPATH, "rossmann.tgz")
+from .download_rossmann import download_rossmann
+from .csv2dicts import csv2dicts
+from .set_nan_as_string import set_nan_as_string
+from .env import DATAPATH, ROSSMANN_PATH
+
+
 random.seed(42)
 np.random.seed(123)
-
-
-def download_rossmann():
-    """
-    Code from:
-    https://stackoverflow.com/questions/16694907/how-to-download-large-file-in-python-with-requests-py
-
-    Thanks to FAST.AI to host the dataset for us!
-    """
-
-    # Thanks for fast.ai to host the dataset.
-    url = "http://files.fast.ai/part2/lesson14/rossmann.tgz"
-    try:
-        if not os.path.exists(DATAPATH):
-            os.mkdir(DATAPATH)
-
-        r = requests.get(url, stream=True)
-        output_file = open(ROSSMANN_PATH, "wb")
-
-        for chunk in r.iter_content(chunk_size=1024):
-            if chunk:
-                output_file.write(chunk)
-        output_file.close()
-
-        subprocess.call(("tar xvf %s -C %s" % (ROSSMANN_PATH, DATAPATH)).split(" "))
-    except:
-        print("Download Failed, " "please manually download data in " "%s" % DATAPATH)
-
-
-def csv2dicts(csvfile):
-    """
-    Reads csv and store each line as json in
-    the format:
-        ---------
-        csv file:
-        ---------
-        colname1, colname2
-        val1, val2
-        val3, val4
-        .
-        .
-        .
-
-        -------
-        Output:
-        -------
-        {'colname1': val1, 'colname2': val2}
-        {'colname1': val3, 'colname2': val4}
-        .
-        .
-        .
-
-    """
-    data = []
-    keys = []
-    for row_index, row in enumerate(csvfile):
-        if row_index == 0:
-            keys = row
-            continue
-
-        data.append({key: value for key, value in zip(keys, row)})
-
-    return data
-
-
-def set_nan_as_string(data, replace_str="0"):
-    """
-    Replaces '' with the '0' string.
-    Original code in:
-        https://github.com/entron/entity-embedding-rossmann/blob/master/extract_csv_files.py
-    """
-    for i, x in enumerate(data):
-        for key, value in x.items():
-            if value == "":
-                x[key] = replace_str
-        data[i] = x
 
 
 def get_X_train_test_data(simulate_sparsity=True):
