@@ -51,6 +51,9 @@ def get_X_train_test_data(simulate_sparsity=True):
     y_test : pandas.Series
     """
 
+    # TODO: 파일이 모두 다운로드 되지 않았다면 다시 다운로드를 하도록 로직 변경하기
+    #       파일 다운로드 중 어떠한 사유로 중단되면 데이터가 깨져서 테스트에 실패하는 경우가 있어서, 이를 인식하고 디렉토리를 초기화 하는 로직을 추가하고자 함
+
     if not os.path.exists(ROSSMANN_PATH):
         download_rossmann()
 
