@@ -30,7 +30,7 @@ random.seed(42)
 np.random.seed(123)
 
 
-def get_X_train_test_data(simulate_sparsity=True):
+def get_rossmann(simulate_sparsity: bool = True):
     """
     Computes the dataset used in:
 
@@ -43,26 +43,29 @@ def get_X_train_test_data(simulate_sparsity=True):
 
     After first computation files are saved and cached as HDF.
 
+    Args:
+        simulate_sparsity (bool): 희소 데이터 여부를 결정합니다. True인 경우, 훈련 데이터셋을 언더샘플링하여 사용합니다
+
     Return:
-    -------
-    X_train : pandas.DataFrame
-    y_train : pandas.Series
-    X_test : pandas.DataFrame
-    y_test : pandas.Series
+        X_train: pandas.DataFrame
+        y_train: pandas.Series
+        X_test: pandas.DataFrame
+        y_test: pandas.Series
     """
 
-    # TODO: 파일이 모두 다운로드 되지 않았다면 다시 다운로드를 하도록 로직 변경하기
-    #       파일 다운로드 중 어떠한 사유로 중단되면 데이터가 깨져서 테스트에 실패하는 경우가 있어서, 이를 인식하고 디렉토리를 초기화 하는 로직을 추가하고자 함
-
+    # Rossmann 파일이 다운로드 되지 않았다면 다운로드 하기
     if not os.path.exists(ROSSMANN_PATH):
         download_rossmann()
 
+    # HDF 데이터 저장 경로 생성
     if simulate_sparsity:
         dataset_output_path = "%s/X_train_test_sparse.hdf" % DATAPATH
     else:
         dataset_output_path = "%s/X_train_test_no_sparse.hdf" % DATAPATH
 
     if not os.path.exists(dataset_output_path):
+        # 해당 경로에 파일이 없다면, csv 파일을 읽어 HDF로 변환, 저장합니다
+
         train_data_path = "%s/train.csv" % DATAPATH
         with open(train_data_path) as csvfile:
             train_data = csv.reader(csvfile, delimiter=",")
@@ -122,11 +125,9 @@ def get_X_train_test_data(simulate_sparsity=True):
         for c in train_data_X.columns:
             train_data_X[c] = train_data_X[c].astype("category").cat.as_ordered()
 
-        """
-        Make train/test splits
-        """
+        # Train/test split 수행
 
-        train_ratio = 0.9
+        train_ratio = 0.9  # 훈련 데이터셋 비율 (기본값: 0.9 = 90%)
         train_size = int(train_ratio * train_data_X.shape[0])
 
         X_train = train_data_X[:train_size]
@@ -139,6 +140,7 @@ def get_X_train_test_data(simulate_sparsity=True):
         X_train.tail(10)
         # Simulate data sparsity
         if simulate_sparsity:
+            # TODO: 이 언더 샘플링 샘플 수(size)가 실제 샘플 수보다 많은지, 적은지 검토하고 어떤 영향을 줄 지 생각해보아야 함
             size = 200000
 
             idx = np.random.randint(X_train.shape[0], size=size)
@@ -151,9 +153,11 @@ def get_X_train_test_data(simulate_sparsity=True):
         y_train.to_hdf(dataset_output_path, key="y_train", format="table")
         y_test.to_hdf(dataset_output_path, key="y_test", format="table")
     else:
-        X_train = pd.read_hdf(dataset_output_path, key="X_train", format="table")
-        X_test = pd.read_hdf(dataset_output_path, key="X_test", format="table")
-        y_train = pd.read_hdf(dataset_output_path, key="y_train", format="table")
-        y_test = pd.read_hdf(dataset_output_path, key="y_test", format="table")
+        # HDF로 저장된 데이터가 있는 경우, 해당 데이터를 로드하여 반환합니다
+
+        X_train = pd.read_hdf(dataset_output_path, key="X_train")
+        X_test = pd.read_hdf(dataset_output_path, key="X_test")
+        y_train = pd.read_hdf(dataset_output_path, key="y_train")
+        y_test = pd.read_hdf(dataset_output_path, key="y_test")
 
     return X_train, y_train, X_test, y_test
