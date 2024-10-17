@@ -1,8 +1,13 @@
 import numpy as np
+import torch
 
 from ..datasets import get_rossmann
 from ..eval_utils import MAPE
 from ..EENNRegression import EntEmbNNRegression
+
+import os
+
+torch.set_num_threads(os.cpu_count())  # 사용할 스레드 수 설정
 
 
 def test_rossman():
@@ -24,6 +29,8 @@ def test_rossman():
 
     models = []
     for random_seed in range(5):
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
         self = EntEmbNNRegression(
             cat_emb_dim={
                 "Store": 10,
@@ -46,6 +53,8 @@ def test_rossman():
             random_seed=random_seed,
             verbose=True,
         )
+
+        self.to(device)
 
         self.fit(X, y)
         models.append(self)
